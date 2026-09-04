@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "applications": {
+    "glass-ui-framework": {
+      "development": {
+        "fallback": "glass-ui-framework.vercel.app"
+      }
+    }
+  }
+}
