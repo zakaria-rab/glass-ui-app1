@@ -3,4 +3,4 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-pnpm install
+pnpm install --frozen-lockfile
