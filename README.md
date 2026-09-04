@@ -53,3 +53,13 @@ connected to its Vercel project, the first build fires on the first push, and th
 in which provisioning could patch the setting first. A committed file is already in place.
 
 Verified in `zakaria-rab/glass-ui-poc`: the same code failed without this file and built with it.
+
+## Web Analytics
+
+`<Analytics/>` from `@vercel/analytics` is in `src/app/layout.tsx` and reports to this app's own
+Vercel project. Do not remove it when adapting this template: an app is deployed on its own and
+also embedded in the Glass UI shell, and page views only attribute correctly if each app reports
+for itself.
+
+Nothing needs enabling in code. Web Analytics has to be switched on once per project in the
+Vercel dashboard, under the project's Analytics tab.
