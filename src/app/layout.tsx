@@ -34,6 +34,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // force-dynamic here would rule out partial prerendering for every route of
   // every app stamped from this template, forever, without anyone
   // re-deciding it.
+  //
+  // Be clear about what that buys today: nothing. With the read here and no
+  // <Suspense> boundary around it, this app is as all-dynamic as force-dynamic
+  // would have made it. The difference is that the door is open — Next's own
+  // caching guide puts `connection()` inside a Suspense-wrapped component so
+  // the rest of the tree prerenders around the dynamic hole, so if Cache
+  // Components is ever turned on, the payoff arrives by moving the flag read
+  // inside a boundary and leaving the chrome outside it. Not worth
+  // restructuring an app this size for.
   await connection();
   const flags = await getServerFlags();
 
