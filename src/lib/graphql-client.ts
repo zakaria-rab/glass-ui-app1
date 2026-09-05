@@ -4,7 +4,7 @@
  * Components — server or client — call `gql`. Nothing calls `fetch` directly,
  * and nothing calls a REST endpoint. If you need new data, add it to
  * src/graphql/schema.ts, implement it in src/graphql/resolvers.ts, and back it
- * with JSON in src/graphql/mocks.
+ * with a method on `PatientsSource` in src/server.
  *
  * One entry point, two transports, chosen by where the code is running:
  *

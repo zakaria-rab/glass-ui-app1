@@ -32,13 +32,26 @@ This repo is also the **template** other Glass UI apps are created from.
 - **Stay embeddable.** Never send `X-Frame-Options` and never add a
   `frame-ancestors` CSP. If a CSP is ever added, it must allow the shell origin.
 - **Data goes through GraphQL.** This app owns its own boundary at
-  `/api/graphql` (graphql-yoga), the same shape as the shell's: SDL in
-  `src/graphql/schema.ts`, resolvers in `src/graphql/resolvers.ts`, JSON in
-  `src/graphql/mocks/`. Components call `gql()` from `src/lib/graphql-client.ts`
-  and nothing else — it executes in-process on the server and POSTs from the
-  browser, so callers cannot tell which. No REST, no direct `fetch` to other
-  services, no hardcoded data in components. To add data: schema first, then
-  resolver, then mock.
+  `/api/graphql` (graphql-yoga): SDL in `src/graphql/schema.ts`, resolvers in
+  `src/graphql/resolvers.ts`. Components call `gql()` from
+  `src/lib/graphql-client.ts` and nothing else — it executes in-process on the
+  server and POSTs from the browser, so callers cannot tell which. No REST, no
+  direct `fetch` to other services, no hardcoded data in components.
+- **The GraphQL tier relays; it never owns the data.** Resolvers depend on the
+  `PatientsSource` interface in `src/server/patients-source.ts`, never on a
+  file. Today the only implementation reads `src/server/patients.json`, which is
+  what proves end-to-end connectivity; tomorrow an internal service is a second
+  implementation selected on `PATIENTS_SERVICE_URL`, and nothing above the
+  interface changes. **A new field means a method on the source plus a resolver
+  that calls it — never a JSON import inside `src/graphql/`.** That one rule is
+  what keeps the seam from eroding. Every method is async even though the
+  current one is synchronous, so adding an HTTP source later does not change a
+  single caller.
+- **"A Node.js server" is this app's route handler, not a second deployment.**
+  The GraphQL tier already runs on Node inside this project. Do not stand up a
+  separate service for it: that is another Vercel project against a limit Gopi
+  raised himself, and the source interface is what makes it a later choice
+  rather than a rewrite.
 - **Why a hand-rolled `gql()` and not a GraphQL client library.** It is the same
   one the shell uses, so the template and the portal teach one pattern — and
   that is the consistency worth having for something ten apps are stamped from.
@@ -49,7 +62,9 @@ This repo is also the **template** other Glass UI apps are created from.
   normalisation and colocation, this schema has no Node interface, global IDs or
   connections, and a compiler step is a poor fit for a template that agents
   generate code into. Revisit only with a reason; don't re-derive this.
-- **Mutable state is in memory, seeded from JSON, never written back.** Vercel
+- **Mutable state is in memory, seeded from JSON, never written back — and
+  that is a property of one implementation, not of the data layer.** It lives in
+  `StaticPatientsSource`; replace that file, not the resolvers. Vercel
   function filesystems are read-only outside `/tmp`, so writing to
   `src/graphql/mocks/` works locally and 500s on every mutation in production
   while reads keep succeeding — the app looks healthy. Pin such state to a

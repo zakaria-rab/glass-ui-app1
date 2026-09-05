@@ -7,9 +7,10 @@ import {
 } from "./patients";
 
 /**
- * Resolvers read only from ./patients, which reads only from ./mocks. That
- * folder is the single swap point for the real backend: when one exists, the
- * store changes and nothing above the GraphQL boundary does.
+ * Resolvers read only from ./patients, which validates and then delegates to
+ * `PatientsSource` in src/server. That interface is the single swap point for a
+ * real backend: when one exists, one implementation is added and nothing here,
+ * in the schema, or in any component changes.
  */
 export const resolvers = {
   Query: {

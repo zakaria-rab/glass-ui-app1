@@ -2,34 +2,23 @@ import { GraphQLError } from "graphql";
 
 import type { Patient, VisitStatus } from "@/lib/types";
 
-import patientSeed from "./mocks/patients.json" with { type: "json" };
+/**
+ * Relative, not `@/server/...`, and it has to stay that way. `pnpm test` runs
+ * these modules under plain Node, which does not read the `@/*` path alias from
+ * tsconfig — a value import through the alias fails to resolve at test time.
+ * Type-only imports are fine because they are erased before Node sees them.
+ */
+import { type PatientChanges, patientsSource } from "../server/patients-source.ts";
 
 /**
- * Patient state and the operations on it.
+ * The GraphQL tier's half of patients: validate the input, ask the source, turn
+ * a missing row into a message someone can act on.
  *
- * Held in memory, seeded from mock JSON. The seed file is never written back:
- * Vercel function filesystems are read-only outside `/tmp`, so a store that
- * wrote to `./mocks` would work on a laptop and 500 on every mutation in
- * production — with GET still succeeding, so the app would look healthy. This
- * is the same trade the shell makes for build requests.
- *
- * READ THIS BEFORE COPYING THIS FILE INTO AN APP THAT KEEPS ANYTHING.
- *
- * A write lands in one instance and only that instance. It is gone on the next
- * deploy, gone when the instance goes idle, and invisible to anyone served by a
- * different one — so two people using this at the same time can genuinely see
- * different lists. Nothing here reports that; the mutation returns 200 and the
- * row appears, which is exactly why it needs saying rather than discovering.
- *
- * That is a deliberate shortcut for a demo whose patients are invented, and the
- * right trade while the only job is showing what a Glass UI app looks like.
- * Replacing it means replacing this file: the resolvers call these five
- * functions and nothing above the GraphQL boundary knows how they are backed.
- *
- * ponytail: in-memory, per instance. Swap for a real store the moment an app
- * keeps something a user would expect to find again. Note that a real store is
- * not what makes real patient data acceptable here — patient records are PHI
- * and do not belong in this repo or any deployment of it.
+ * No JSON import here, and there must never be one. This tier relays to a
+ * backend and does not own data — a new field means a method on
+ * `PatientsSource` and a resolver that calls it, never a file read in
+ * `src/graphql/`. That rule is what keeps the seam from eroding once apps are
+ * stamped from this template.
  */
 
 /**
@@ -45,47 +34,12 @@ function userError(message: string): GraphQLError {
 }
 
 /**
- * The list, pinned to the global object rather than to module scope.
- *
- * Sharing one `executable-schema.ts` is necessary but not sufficient: Next
- * builds the route handler and the page as separate server module graphs, so a
- * module-scope `const` is evaluated once per graph and the app ends up with two
- * independent stores. Measured, not assumed — a patient added over
- * /api/graphql left the HTTP store at 5 rows while a fresh server render still
- * saw 4, so a browser mutation followed by a reload showed the old list with no
- * error anywhere.
- *
- * A global key is evaluated once per process, which both graphs share. It also
- * survives dev-server hot reloads, which module scope does not.
- *
- * ponytail: one process, one store. Each Vercel instance still holds its own
- * copy, which is the in-memory ceiling above and unchanged by this.
- */
-const GLOBAL_KEY = "__glassUiApp1Patients";
-
-type WithStore = typeof globalThis & { [GLOBAL_KEY]?: Patient[] };
-
-const store = globalThis as WithStore;
-
-store[GLOBAL_KEY] ??= (patientSeed as Patient[]).map((seed) => ({ ...seed }));
-
-const patients: Patient[] = store[GLOBAL_KEY];
-
-export function listPatients(): Patient[] {
-  return patients;
-}
-
-export function findPatient(id: string): Patient | null {
-  return patients.find((patient) => patient.id === id) ?? null;
-}
-
-/**
  * The schema already guarantees types, required fields and enum membership, so
  * this only checks what SDL cannot express: that strings carry something once
- * trimmed, and that a balance is not negative.
+ * trimmed, that a date is a date, and that a balance is not negative.
  */
-function clean(input: Record<string, unknown>): Partial<Patient> {
-  const out: Partial<Patient> = {};
+function clean(input: Record<string, unknown>): PatientChanges {
+  const out: PatientChanges = {};
 
   for (const key of ["name", "phone", "provider", "nextVisit"] as const) {
     const value = input[key];
@@ -95,8 +49,8 @@ function clean(input: Record<string, unknown>): Partial<Patient> {
     out[key] = trimmed;
   }
 
-  if (input.nextVisit !== undefined && input.nextVisit !== null) {
-    const date = String(input.nextVisit).trim();
+  if (out.nextVisit !== undefined) {
+    const date = out.nextVisit;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
       throw userError(`nextVisit is "${date}". Use a date in YYYY-MM-DD form.`);
     /**
@@ -121,36 +75,41 @@ function clean(input: Record<string, unknown>): Partial<Patient> {
   return out;
 }
 
-export function addPatient(input: Record<string, unknown>): Patient {
+export function listPatients(): Promise<Patient[]> {
+  return patientsSource().list();
+}
+
+export function findPatient(id: string): Promise<Patient | null> {
+  return patientsSource().get(id);
+}
+
+export function addPatient(input: Record<string, unknown>): Promise<Patient> {
   const fields = clean(input);
-  const patient: Patient = {
-    id: crypto.randomUUID(),
+  return patientsSource().add({
     name: fields.name!,
     phone: fields.phone!,
     provider: fields.provider!,
     nextVisit: fields.nextVisit!,
     status: fields.status ?? "SCHEDULED",
     balance: fields.balance ?? 0,
-  };
-  patients.push(patient);
-  return patient;
+  });
 }
 
-export function changePatient(id: string, changes: Record<string, unknown>): Patient {
+export async function changePatient(
+  id: string,
+  changes: Record<string, unknown>,
+): Promise<Patient> {
   const fields = clean(changes);
   if (Object.keys(fields).length === 0)
     throw userError("No changes were sent. Include at least one field to change.");
 
-  const patient = findPatient(id);
+  const patient = await patientsSource().change(id, fields);
   if (!patient) throw userError(`No patient has id ${id}. Reload the list and try again.`);
-
-  Object.assign(patient, fields);
   return patient;
 }
 
-export function removePatient(id: string): string {
-  const at = patients.findIndex((patient) => patient.id === id);
-  if (at === -1) throw userError(`No patient has id ${id}. It may already have been removed.`);
-  patients.splice(at, 1);
+export async function removePatient(id: string): Promise<string> {
+  const removed = await patientsSource().remove(id);
+  if (!removed) throw userError(`No patient has id ${id}. It may already have been removed.`);
   return id;
 }

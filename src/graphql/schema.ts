@@ -2,7 +2,8 @@
  * The one contract between this app's frontend and its backend.
  *
  * To add data: add it here first, then implement it in ./resolvers.ts, then
- * back it with JSON in ./mocks. Nothing reaches a component any other way.
+ * back it with a method on `PatientsSource` in src/server. Nothing reaches a
+ * component any other way, and no resolver reads a file.
  */
 export const typeDefs = /* GraphQL */ `
   """How far a patient has got through their appointment."""
