@@ -20,6 +20,18 @@ import type { NextConfig } from "next";
  * `/apps/<slug>/*` and this app answers on those paths through the group.
  * Still no `X-Frame-Options` or `frame-ancestors` — the shell embeds this app.
  */
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  /**
+   * Microfrontends forwards a matched path to this app unchanged — it does not
+   * strip the prefix. An app routed at /apps/<slug> must therefore serve
+   * /apps/<slug>, or every request arriving through the group answers 404
+   * while the app works perfectly at its own URL. The 404 page even carries
+   * this app's asset prefix, which makes it read as a routing fault.
+   *
+   * Provisioning rewrites this value to the app's own slug when it stamps a
+   * repository. See rename-app.ts in the shell.
+   */
+  basePath: "/apps/app1",
+};
 
 export default withMicrofrontends(nextConfig);
