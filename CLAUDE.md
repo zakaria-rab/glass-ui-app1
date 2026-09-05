@@ -105,3 +105,23 @@ This repo is also the **template** other Glass UI apps are created from.
 
 Run `pnpm lint`, `pnpm test` and `pnpm build` before opening a PR, and attach a screenshot of
 any changed page.
+
+## Brand
+
+`src/design/tokens.css` is the Overjet Design System, copied verbatim. **Do not edit token
+values** — re-copy them from source. `src/app/globals.css` is the base layer and is identical to
+the shell's on purpose: this app renders inside the portal and standalone, and it must look the
+same in both.
+
+Read `docs/design.md` before writing UI. The rules that are not expressible as tokens live
+there, and each one is something that has already been got wrong: the canvas is warm off-white
+never white, cards never carry a border, violet `--brand` is the only brand primary, sentence
+case everywhere, tabular numerals wherever numbers align, verb-first button labels, and errors
+that say what failed and how to fix it.
+
+No other UI library. No Tailwind, no shadcn, no MUI, no Ant Design. Plain CSS Modules and CSS
+variables — the rule is replace, don't blend, because a blended palette is harder to fix later
+than to avoid now.
+
+Every colour, spacing, radius, shadow and transition references a token. A literal in a
+stylesheet is a bug.

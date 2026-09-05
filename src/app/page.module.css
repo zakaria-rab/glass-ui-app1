@@ -10,13 +10,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: color-mix(in srgb, var(--oj-background) 72%, transparent);
+  background: color-mix(in srgb, var(--canvas) 72%, transparent);
   backdrop-filter: blur(12px);
   letter-spacing: -0.01em;
 }
 
 .count {
-  color: var(--oj-text-muted);
+  color: var(--text-2);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
@@ -31,8 +31,8 @@
 }
 
 .card {
-  background: var(--oj-surface);
-  border-radius: var(--oj-radius);
+  background: var(--surface-card);
+  border-radius: var(--r-lg);
   padding: 20px;
   box-shadow:
     0 1px 2px rgb(24 24 27 / 0.06),
@@ -53,28 +53,28 @@
 }
 
 .primary {
-  background: var(--oj-accent);
-  color: var(--oj-surface);
+  background: var(--brand);
+  color: var(--text-on-brand);
   font-weight: 500;
 }
 
 .primary:hover {
-  background: color-mix(in oklab, var(--oj-accent) 88%, black);
+  background: color-mix(in oklab, var(--brand) 88%, black);
 }
 
 .ghost {
   background: transparent;
-  color: var(--oj-text-muted);
+  color: var(--text-2);
 }
 
 .ghost:hover {
-  background: var(--oj-background);
-  color: var(--oj-danger);
+  background: var(--canvas);
+  color: var(--er);
 }
 
 .error {
   margin-top: 12px;
-  color: var(--oj-danger);
+  color: var(--er);
   font-size: 14px;
 }
 
@@ -88,13 +88,13 @@
   text-align: left;
   font-size: 12px;
   font-weight: 500;
-  color: var(--oj-text-muted);
+  color: var(--text-2);
   padding-bottom: 8px;
 }
 
 .table td {
   padding: 8px 12px 8px 0;
-  border-top: 1px solid var(--oj-border);
+  border-top: 1px solid var(--border);
 }
 
 .table th:not(:last-child) {
