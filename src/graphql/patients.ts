@@ -13,10 +13,23 @@ import patientSeed from "./mocks/patients.json" with { type: "json" };
  * production — with GET still succeeding, so the app would look healthy. This
  * is the same trade the shell makes for build requests.
  *
- * ponytail: in-memory means the list resets when the server process restarts,
- * and on Vercel each instance holds its own copy. Fine while this is demo data;
- * the first real store replaces this file and nothing above the GraphQL
- * boundary changes.
+ * READ THIS BEFORE COPYING THIS FILE INTO AN APP THAT KEEPS ANYTHING.
+ *
+ * A write lands in one instance and only that instance. It is gone on the next
+ * deploy, gone when the instance goes idle, and invisible to anyone served by a
+ * different one — so two people using this at the same time can genuinely see
+ * different lists. Nothing here reports that; the mutation returns 200 and the
+ * row appears, which is exactly why it needs saying rather than discovering.
+ *
+ * That is a deliberate shortcut for a demo whose patients are invented, and the
+ * right trade while the only job is showing what a Glass UI app looks like.
+ * Replacing it means replacing this file: the resolvers call these five
+ * functions and nothing above the GraphQL boundary knows how they are backed.
+ *
+ * ponytail: in-memory, per instance. Swap for a real store the moment an app
+ * keeps something a user would expect to find again. Note that a real store is
+ * not what makes real patient data acceptable here — patient records are PHI
+ * and do not belong in this repo or any deployment of it.
  */
 
 /**

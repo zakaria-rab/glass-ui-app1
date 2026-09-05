@@ -39,6 +39,16 @@ This repo is also the **template** other Glass UI apps are created from.
   browser, so callers cannot tell which. No REST, no direct `fetch` to other
   services, no hardcoded data in components. To add data: schema first, then
   resolver, then mock.
+- **Why a hand-rolled `gql()` and not a GraphQL client library.** It is the same
+  one the shell uses, so the template and the portal teach one pattern — and
+  that is the consistency worth having for something ten apps are stamped from.
+  There was no convention to inherit: the org has no single GraphQL client
+  (`@apollo/client` in insurance-analytics-frontend and its demo fork,
+  `graphql-request` in pnm_platform and devops-triage, hand-rolled in the
+  shell). Relay was investigated and rejected — its value is fragments,
+  normalisation and colocation, this schema has no Node interface, global IDs or
+  connections, and a compiler step is a poor fit for a template that agents
+  generate code into. Revisit only with a reason; don't re-derive this.
 - **Mutable state is in memory, seeded from JSON, never written back.** Vercel
   function filesystems are read-only outside `/tmp`, so writing to
   `src/graphql/mocks/` works locally and 500s on every mutation in production
@@ -47,6 +57,15 @@ This repo is also the **template** other Glass UI apps are created from.
   as separate server module graphs, so a module-scope `const` is evaluated once
   per graph and you get two independent stores. Pin *every* piece of state the
   graphs must agree on, not just the list.
+- **That store is a demo shortcut, not a foundation — replace it before an app
+  keeps anything real.** Writes live only in the instance that received them, so
+  they vanish on deploy, on scale-out and when the instance goes idle, and two
+  people using the app at once can see different lists. That is acceptable for a
+  schedule of invented patients whose whole job is to show what a Glass UI app
+  looks like. It is not acceptable for anything a user would expect to still be
+  there. And it is not the reason the data here is fake: patient records are PHI
+  and must not go into this repo, its mock JSON, or any deployment of it, whether
+  the store is memory or Postgres.
 - **Pages that query on the server call `await connection()` first,** so data is
   read at request time instead of frozen into the build. Not
   `export const dynamic`, which is segment config and rules out partial
