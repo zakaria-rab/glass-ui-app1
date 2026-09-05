@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "glass-ui-app1",
-  description: "A standalone Glass UI app, embedded by the Glass UI shell.",
+  title: "Glass PMS",
+  description: "Practice management demo — synthetic data only.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
