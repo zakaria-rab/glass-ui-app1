@@ -125,3 +125,28 @@ than to avoid now.
 
 Every colour, spacing, radius, shadow and transition references a token. A literal in a
 stylesheet is a bug.
+
+## Microfrontends
+
+This app is a child in the `glass-apps` Vercel Microfrontends group. The shell,
+`glass-ui-framework`, is the default application and owns the authoritative
+`microfrontends.json`.
+
+Three things make that work, and none of them are optional:
+
+- `withMicrofrontends(nextConfig)` in `next.config.ts`. It generates the
+  `vc-ap-*` asset prefix so this app's `/_next/*` cannot collide with the
+  shell's or another app's. This replaced a hand-written `assetPrefix` from
+  `VERCEL_URL` — same problem, now solved by the platform.
+- `"buildCommand": "vercel microfrontends pull && next build"` in `vercel.json`.
+  In a polyrepo the config lives in the default app, and a build that cannot
+  find it **fails outright** rather than degrading.
+- A committed `microfrontends.json` declaring this app *and* the default app.
+  It exists so `pnpm build` works in a fresh clone with no Vercel auth — which
+  Open Inspect sandboxes need, since they run pnpm and not the Vercel CLI. On
+  Vercel it is overwritten by the pull. Its `applications` key must match this
+  app's Vercel project name, and its routing paths must match the slug, or the
+  build fails with `Could not find microfrontends configuration`.
+
+Do not add `basePath`. Routing forwards `/apps/<slug>/*` and this app answers on
+those paths through the group.
