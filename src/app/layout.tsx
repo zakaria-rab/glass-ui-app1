@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { connection } from "next/server";
 
 import { getServerFlags } from "@/lib/flags";
 
@@ -18,19 +19,22 @@ export const metadata: Metadata = {
   description: "A standalone Glass UI app, embedded by the Glass UI shell.",
 };
 
-/**
- * Flags are request-time data, not build-time. Without this the layout's flag
- * read is evaluated once during `next build` and baked into a prerendered
- * page, so flipping a flag in Flagsmith would change nothing until the next
- * deploy — which is not a feature flag.
- *
- * ponytail: force-dynamic on the root layout costs this app static rendering
- * wholesale. If an app ever needs the static path back, drop the provider from
- * the layout and read flags per route instead.
- */
-export const dynamic = "force-dynamic";
-
 export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Flags are request-time data, not build-time: without this the read is
+  // evaluated once during `next build` and baked into a prerendered page, so
+  // flipping a flag in Flagsmith would change nothing until the next deploy,
+  // which is not a feature flag.
+  //
+  // `connection()` rather than `export const dynamic = "force-dynamic"`. It is
+  // the shell's convention for exactly this (its CLAUDE.md: "pages that query
+  // on the server call `await connection()` first, so the registry is read at
+  // request time instead of being frozen into the build"), and this template
+  // is stamped into every future app, so it should teach one idiom rather than
+  // a second one. It also leaves the segment config alone: a blanket
+  // force-dynamic here would rule out partial prerendering for every route of
+  // every app stamped from this template, forever, without anyone
+  // re-deciding it.
+  await connection();
   const flags = await getServerFlags();
 
   return (
